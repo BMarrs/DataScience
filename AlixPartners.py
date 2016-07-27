@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import requests
 import time
+
 # Set the input path
 input_path = 'C:/Problem3_Data'
 country_input = input_path + '/Problem 3 Input Data - Country Map.txt'
@@ -35,6 +36,9 @@ if ref_row_count == unique_row_count:
 else:
     print("Row counts do not match.  Raw counts: %d, unique counts: %d." %
           (ref_row_count, unique_row_count))
+
+# save the cleaned file to disk.
+country_map.to_csv('C:/Problem3_Data/CountryMap.csv', sep='|', encoding='utf-8')
 
 # The data source contains improperly formatted unicode characters.
 # Example: row 97523: 'BIENK#|98|#WKA'|'PL' which is not a unicode definition for what it should
@@ -83,13 +87,12 @@ unique_cities = pd.DataFrame({'count': input_data.groupby(
 unique_sort = unique_cities.sort_values(by='count', ascending=0)
 print(unique_sort[:10])
 
-
 g_url = 'https://maps.googleapis.com/maps/api/geocode/json?'
 g_key = 'AIzaSyA5TX9wDRR60A1wrv_pwRJyleBz3NZ25g0'
 
 
-# Function for retrieving a query from google maps api
 def geo_loc(city, country):
+    """Query the google maps API and retrieve unique city / country data"""
     address_1 = g_url + 'address=' + city
     address_2 = '&components=country:' + country + '&key='
     query_url = address_1 + address_2 + g_key
@@ -165,7 +168,7 @@ for index, row in unique_sort.iterrows():
     g_lat.append(r_lat)
     g_lng.append(r_lng)
     time.sleep(0.1)
-    
+
 # add the data to the data frame.
 unique_sort['lat'] = g_lat
 unique_sort['lng'] = g_lng
@@ -177,3 +180,50 @@ unique_sort['g_country'] = g_country
 unique_sort['g_country_code'] = g_country_iso
 
 # merge the geo-location data back to the original data frame.
+unique_sort.to_csv('C:/Problem3_Data/GeoRaw.csv', sep='|', encoding='utf-8')
+geo_merge = pd.merge(input_data, unique_sort, how='left', on=['CityName', 'CountryCode'])
+geo_merge.to_csv('C:/Problem3_Data/GeoMerge.csv', sep='|', encoding='utf-8')
+
+# there is a strict limit on the number of enquiries that can be returned with this get command
+# from the google api and as such, would take either a license, or several (8 days) to
+# fill in the data completely, as there are 17663 unique entries.
+
+# place the country mapping data into a dataframe
+country_map = pd.read_csv('C:/Problem3_Data/CountryMap.csv', sep='|', header=0,
+                          index_col=0, engine='python')
+# place the geo_data into a dataframe
+geo_data = pd.read_csv('C:/Problem3_Data/GeoMerge.csv', sep='|', header=0,
+                       index_col=0, engine='python', skipinitialspace=True)
+# drop the count field as it is not needed.
+geo_input = geo_data.drop('count', axis=1)
+# merge the reference table data
+final_output = pd.merge(geo_input, country_map, how='left', on='CountryCode')
+# reorder the fields
+final_output = final_output[['CityName', 'CountryCode', 'CountryName',
+                             'g_city', 'g_county', 'g_state', 'g_state_abbr',
+                             'g_country', 'g_country_code', 'lat', 'lng']]
+
+
+# apply a match success evaluation field
+def match_check(row):
+    """Checks to see if the geoloc from Google's api matches the raw input"""
+    if row['CountryCode'] == row['g_country_code']:
+        match = 1
+    else:
+        match = 0
+    return match
+
+# create the match success check field and apply it to the data frame.
+final_output['Match_Success'] = final_output.apply(match_check, axis=1)
+# rename the fields
+final_output.columns = ['Input_City', 'Input_CountryCode', 'Output_CountryName',
+                        'g_CityName', 'g_County', 'g_State', 'g_State_Abbreviation',
+                        'g_CountryName', 'g_CountryCode', 'g_latitude', 'g_longitude',
+                        'g_Match_Success']
+# verification of correct formatting
+print(final_output[:10])
+# save the output file
+final_output.to_csv('C:/Problem3_Data/FinalOutput.csv', sep='|', header=0, index=False,
+                    encoding='utf-8')
+
+

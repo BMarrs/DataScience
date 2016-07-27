@@ -12,6 +12,9 @@ def geo_loc(city, country):
     # submit and get the response
     try:
         response = requests.get(query_url)
+        print(response)
+        entity = response.json()['results']
+        print(entity)
         try:
             results = response.json()['results']
             print(results)
@@ -66,7 +69,7 @@ g_country = []
 g_country_iso = []
 g_lat = []
 g_lng = []
-r_city, r_county, r_state, r_state_a, r_country, r_iso, r_lat, r_lng = geo_loc('Austin', 'US')
+r_city, r_county, r_state, r_state_a, r_country, r_iso, r_lat, r_lng = geo_loc('NEW YORK', 'US')
 g_city.append(r_city)
 g_county.append(r_county)
 g_state.append(r_state)
