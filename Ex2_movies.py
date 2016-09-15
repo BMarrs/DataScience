@@ -25,3 +25,34 @@ top_female_ratings = mean_ratings.sort_values(by='F', ascending=False)
 # See what the difference in mean ratings between men and women are by adding in a new field.
 mean_ratings['diff'] = mean_ratings['M'] - mean_ratings['F']
 
+
+def rating_check(row):
+    """Categorical check on significance"""
+    if row['diff'] >= 0.2:
+        delta = 'Significant_M'
+    elif 0 < row['diff'] < 0.2:
+        delta = 'Small_M'
+    elif -0.2 < row['diff'] <= 0:
+        delta = 'Small_F'
+    elif row['diff'] <= -0.2:
+        delta = 'Significant_F'
+    else:
+        delta = 'Unresolved'
+    return delta
+
+mean_ratings['rating_check'] = mean_ratings.apply(rating_check, axis=1)
+# get the top disagreement films...
+sorted_by_diff = mean_ratings.sort_values(by='diff', ascending=True)
+
+print(sorted_by_diff.describe())
+
+print(sorted_by_diff[:10])
+print(sorted_by_diff[::-1][:10])
+# now let's get the movies that are most varied in their ratings:
+rating_std_by_title = data.groupby('title')['rating'].std()
+rating_std_by_title = rating_std_by_title.ix[active_titles]
+print(rating_std_by_title.sort_values(ascending=False)[:10])
+
+
+
+

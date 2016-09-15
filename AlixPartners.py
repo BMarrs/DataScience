@@ -3,6 +3,7 @@ import re
 import requests
 import time
 
+
 # Set the input path
 input_path = 'C:/Problem3_Data'
 country_input = input_path + '/Problem 3 Input Data - Country Map.txt'
@@ -85,6 +86,12 @@ unique_cities = pd.DataFrame({'count': input_data.groupby(
     by=('CityName', 'CountryCode')).size()}).reset_index()
 # sort the data frame by the largest counts
 unique_sort = unique_cities.sort_values(by='count', ascending=0)
+# TODO: use a service like geotext or pyenchant to verify the spelling of the city and return a corrected value if warranted.
+# TODO: also provide a means of calculating levenstein distances within each country grouping.
+# TODO: search each of the low-rate entries against a set of the high occurence... see if they have a high rate match
+# if they do, then simply provide the 'output' aspect of that.
+
+
 print(unique_sort[:10])
 
 g_url = 'https://maps.googleapis.com/maps/api/geocode/json?'
